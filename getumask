@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+from __future__ import print_function
+import sys
+import os, os.path
+import subprocess
+
+def main():
+    if len(sys.argv) < 2:
+        print('Usage: {0} pid'.format(APPNAME), file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        pid = int(sys.argv[1])
+    except ValueError:
+        print('Invalid pid: "{0}"'.format(sys.argv[1]), file=sys.stderr)
+        sys.exit(1)
+
+    args = [
+        'gdb', 
+        '-p', str(pid),             # Attach to this pid
+        '-nh',                      # Don't invoke .gdbinit
+        '-batch',                   # Exit after running commands
+        '-ex', 'call umask(0)',     # Set umask to 0, and get current umask in $1
+        '-ex', 'call umask($1)',    # Restore original umask
+    ]
+
+    p = subprocess.Popen(args,
+        stdout = subprocess.PIPE,
+        stderr = subprocess.PIPE)
+
+    stdoutdata, stderrdata = p.communicate()
+
+    if p.returncode != 0:
+        print('GDB exited with code {0}. Output:'.format(p.returncode), file=sys.stderr)
+        print(stderrdata, file=sys.stderr)
+        sys.exit(2)
+
+    # GDB was successful
+    for line in stdoutdata.split('\n'):
+        if line.startswith('$1 ='):
+            result = int(line.split(' = ')[1])
+            print(result)
+            sys.exit(0)
+
+    # Couldn't find result in GDB output
+    # Look for the 'ptrace:' output
+    for line in stderrdata.split('\n'):
+        if line.startswith('ptrace:'):
+            print(line, file=sys.stderr)
+            sys.exit(2)
+
+    print('Unexpected GDB output:', file=sys.stderr)
+    print(stderrdata, file=sys.stderr)
+    sys.exit(2)
+
+
+if __name__ == '__main__':
+    APPNAME = os.path.basename(sys.argv[0])
+    main()
