@@ -81,10 +81,37 @@ def test_nosuchproc():
     # Verify the output indicated why
     assert('no such process' in err.lower())
 
+def test_noperm():
+    print 'Testing not permitted process'
+
+    # First, make sure we're not running as root
+    assert(os.geteuid() != 0)
+
+    # As long as we're not root, we won't be able to
+    # attach to init
+    pid = 1
+
+    # Invoke 'getumask'
+    getumask = Popen(['./getumask', str(pid)], stdout=PIPE, stderr=PIPE)
+    out, err = getumask.communicate()
+
+    # Verify getumask returned failure
+    assert(getumask.returncode == 2)
+
+    # Verify the output indicated why
+    assert('operation not permitted' in err.lower())
 
 
 if __name__ == '__main__':
+    if os.geteuid() == 0:
+        print 'Cannot be run as root.'
+        sys.exit(1)
+
     do_test(0)
     do_test(0345)
 
     test_nosuchproc()
+
+    test_noperm()
+
+    print '\nSuccess!'
