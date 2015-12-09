@@ -19,7 +19,7 @@ def main():
     args = [
         'gdb', 
         '-p', str(pid),             # Attach to this pid
-        '-nh',                      # Don't invoke .gdbinit
+        '-n',                       # Don't invoke any .gdbinit
         '-batch',                   # Exit after running commands
         '-ex', 'call umask(0)',     # Set umask to 0, and get current umask in $1
         '-ex', 'call umask($1)',    # Restore original umask
