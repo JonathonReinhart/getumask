@@ -55,11 +55,36 @@ def do_test(umask):
     umask_set.close()
     finished.close()
 
+    # Verify getumask returned success
     assert(getumask.returncode == 0)
-    result = int(out.strip())
 
+    # Verify the determined umask is correct
+    result = int(out.strip())
     assert(result == umask)
+
+
+def test_nosuchproc():
+    print 'Testing invalid process'
+
+    # Get the system pid_max. This value is one higher than the
+    # highest PID which will be allocated. We know that this
+    # process will not be running
+    pid = int(open('/proc/sys/kernel/pid_max', 'r').read())
+
+    # Invoke 'getumask'
+    getumask = Popen(['./getumask', str(pid)], stdout=PIPE, stderr=PIPE)
+    out, err = getumask.communicate()
+
+    # Verify getumask returned failure
+    assert(getumask.returncode == 2)
+
+    # Verify the output indicated why
+    assert('no such process' in err.lower())
+
+
 
 if __name__ == '__main__':
     do_test(0)
     do_test(0345)
+
+    test_nosuchproc()
