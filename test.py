@@ -56,11 +56,16 @@ def do_test(umask):
     finished.close()
 
     # Verify getumask returned success
-    assert(getumask.returncode == 0)
+    if getumask.returncode != 0:
+        print 'ERROR: getumask returned {0} (expected 0). Output:'.format(getumask.returncode)
+        print err
+        sys.exit(2)
 
     # Verify the determined umask is correct
     result = int(out.strip())
-    assert(result == umask)
+    if result != umask:
+        print 'ERROR: getumask printed {0} (expected {1})'.format(result, umask)
+        sys.exit(2)
 
 
 def test_nosuchproc():
